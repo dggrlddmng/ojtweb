@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css'; // If using npm install for Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function FileUploaderDownloader({ files }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [downloadingFile, setDownloadingFile] = useState(null);
+  const [deletingFile, setDeletingFile] = useState(null);
 
   async function handleUpload() {
     if (!selectedFile) return;
@@ -47,6 +48,23 @@ export default function FileUploaderDownloader({ files }) {
     }
   }
 
+  async function handleDelete(filename) {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+    setDeletingFile(filename);
+    try {
+      const response = await fetch(`http://localhost:8000/files/${filename}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Delete failed.");
+      alert(`File "${filename}" deleted successfully. Please refresh the page.`);
+    } catch (err) {
+      alert(`Failed to delete file "${filename}".`);
+    } finally {
+      setDeletingFile(null);
+    }
+  }
+
   function handleFileChange(e) {
     if (e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
@@ -63,21 +81,32 @@ export default function FileUploaderDownloader({ files }) {
         <table className="table table-bordered table-hover">
           <thead className="table-dark">
             <tr>
-              <th scope="col">Filename</th>
-              <th scope="col">Download</th>
+              <th>Filename</th>
+              <th>Date & Time</th>
+              <th>Type</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {files.map((file) => (
-              <tr key={file}>
-                <td>{file}</td>
+              <tr key={file.filename}>
+                <td>{file.filename}</td>
+                <td>{new Date(file.upload_time).toLocaleString()}</td>
+                <td>{file.content_type}</td>
                 <td>
                   <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => handleDownload(file)}
-                    disabled={downloadingFile === file}
+                    className="btn btn-primary btn-sm me-2"
+                    onClick={() => handleDownload(file.filename)}
+                    disabled={downloadingFile === file.filename || deletingFile === file.filename}
                   >
-                    {downloadingFile === file ? "Downloading..." : "Download"}
+                    {downloadingFile === file.filename ? "Downloading..." : "Download"}
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(file.filename)}
+                    disabled={deletingFile === file.filename || downloadingFile === file.filename}
+                  >
+                    {deletingFile === file.filename ? "Deleting..." : "Delete"}
                   </button>
                 </td>
               </tr>
@@ -100,14 +129,14 @@ export default function FileUploaderDownloader({ files }) {
   );
 }
 
-// For SSR (Next.js only)
+// This must match the backend's return structure (FastAPI)
 export async function getServerSideProps() {
   const res = await fetch("http://localhost:8000/files");
   const data = await res.json();
 
   return {
     props: {
-      files: data.files || [],
+      files: data.files || [], // each file: { filename, upload_time, content_type }
     },
   };
 }

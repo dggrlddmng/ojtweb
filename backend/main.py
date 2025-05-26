@@ -7,7 +7,6 @@ from slowapi.errors import RateLimitExceeded
 from datetime import datetime, timedelta
 import os
 import json
-import mimetypes
 
 app = FastAPI()
 
@@ -38,39 +37,24 @@ app.add_middleware(
 )
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+@limiter.limit("5/minute")
+async def upload_file(request: Request, file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         while chunk := await file.read(1024 * 1024):
             buffer.write(chunk)
-
-    # Save current UTC time as ISO string
+    
+    # Save upload timestamp
     file_metadata[file.filename] = datetime.utcnow().isoformat()
-    with open(META_FILE, "w") as f:
-        json.dump(file_metadata, f)
+    save_metadata()
 
     return {"filename": file.filename}
 
 @app.get("/files")
+@limiter.limit("10/minute")
 async def list_files(request: Request):
-    try:
-        files_list = []
-        for filename in os.listdir(UPLOAD_DIR):
-            filepath = os.path.join(UPLOAD_DIR, filename)
-            if os.path.isfile(filepath):
-                upload_time = file_metadata.get(filename)
-                # Guess MIME type based on file extension
-                content_type, _ = mimetypes.guess_type(filename)
-                if content_type is None:
-                    content_type = "application/octet-stream"
-                files_list.append({
-                    "filename": filename,
-                    "upload_time": upload_time,
-                    "content_type": content_type,
-                })
-        return {"files": files_list}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"detail": f"Internal server error: {str(e)}"})
+    files = os.listdir(UPLOAD_DIR)
+    return {"files": files}
 
 @app.get("/files/{filename}")
 @limiter.limit("20/minute")
@@ -86,7 +70,7 @@ async def get_file(request: Request, filename: str):
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 
 @app.delete("/files")
-@limiter.limit("2/minute") 
+@limiter.limit("2/minute")  # limit to avoid abuse
 async def delete_all_files(request: Request):
     try:
         for filename in os.listdir(UPLOAD_DIR):
@@ -102,15 +86,3 @@ async def delete_all_files(request: Request):
         return {"detail": "All files deleted successfully"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"detail": f"Failed to delete files: {str(e)}"})
-    
-@app.delete("/files/{filename}")
-async def delete_file(filename: str):
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(file_path):
-        return JSONResponse(status_code=404, detail="File not found")
-
-    os.remove(file_path)
-    if filename in file_metadata:
-        del file_metadata[filename]
-        save_metadata()
-    return {"detail": "File deleted successfully"}

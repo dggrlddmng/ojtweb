@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/css/bootstrap.min.css'; // If using npm install for Bootstrap
 
 export default function FileUploaderDownloader({ files }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -63,25 +63,21 @@ export default function FileUploaderDownloader({ files }) {
         <table className="table table-bordered table-hover">
           <thead className="table-dark">
             <tr>
-              <th>Filename</th>
-              <th>Date & Time</th>
-              <th>Type</th>
-              <th>Download</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Download</th>
             </tr>
           </thead>
           <tbody>
             {files.map((file) => (
-              <tr key={file.filename}>
-                <td>{file.filename}</td>
-                <td>{new Date(file.upload_time).toLocaleString()}</td>
-                <td>{file.content_type}</td>
+              <tr key={file}>
+                <td>{file}</td>
                 <td>
                   <button
                     className="btn btn-primary btn-sm"
-                    onClick={() => handleDownload(file.filename)}
-                    disabled={downloadingFile === file.filename}
+                    onClick={() => handleDownload(file)}
+                    disabled={downloadingFile === file}
                   >
-                    {downloadingFile === file.filename ? "Downloading..." : "Download"}
+                    {downloadingFile === file ? "Downloading..." : "Download"}
                   </button>
                 </td>
               </tr>
@@ -104,15 +100,14 @@ export default function FileUploaderDownloader({ files }) {
   );
 }
 
-// This must match the backend's return structure (FastAPI)
+// For SSR (Next.js only)
 export async function getServerSideProps() {
   const res = await fetch("http://localhost:8000/files");
   const data = await res.json();
 
   return {
     props: {
-      files: data.files || [], // each file: { filename, upload_time, content_type }
+      files: data.files || [],
     },
   };
 }
-

@@ -69,20 +69,3 @@ async def get_file(request: Request, filename: str):
 
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 
-@app.delete("/files")
-@limiter.limit("2/minute")  # limit to avoid abuse
-async def delete_all_files(request: Request):
-    try:
-        for filename in os.listdir(UPLOAD_DIR):
-            file_path = os.path.join(UPLOAD_DIR, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
-        global file_metadata
-        file_metadata = {}
-        if os.path.exists(META_FILE):
-            os.remove(META_FILE)
-
-        return {"detail": "All files deleted successfully"}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"detail": f"Failed to delete files: {str(e)}"})

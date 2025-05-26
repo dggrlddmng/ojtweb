@@ -70,7 +70,7 @@ async def get_file(request: Request, filename: str):
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 
 @app.delete("/files")
-@limiter.limit("2/minute")  # limit to avoid abuse
+@limiter.limit("2/minute") 
 async def delete_all_files(request: Request):
     try:
         for filename in os.listdir(UPLOAD_DIR):

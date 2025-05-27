@@ -14,7 +14,7 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "uploadedsss"
 META_FILE = "file_meta.json"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

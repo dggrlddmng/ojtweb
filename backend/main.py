@@ -44,7 +44,6 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         while chunk := await file.read(1024 * 1024):
             buffer.write(chunk)
     
-    # Save upload timestamp
     file_metadata[file.filename] = datetime.utcnow().isoformat()
     save_metadata()
 
@@ -63,14 +62,14 @@ async def get_file(request: Request, filename: str):
     if not os.path.exists(file_path):
         return JSONResponse(status_code=404, content={"detail": "File not found"})
 
-    file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))  # Use UTC time
+    file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
     if datetime.now() > file_mtime + timedelta(seconds=5):
         return JSONResponse(status_code=403, content={"detail": "File has expired"})
 
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 
 @app.delete("/files")
-@limiter.limit("2/minute")  # limit to avoid abuse
+@limiter.limit("2/minute")
 async def delete_all_files(request: Request):
     try:
         for filename in os.listdir(UPLOAD_DIR):

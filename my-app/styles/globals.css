@@ -91,14 +91,30 @@
   cursor: not-allowed;
 }
 
+.refresh-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.btn-refresh {
+  padding-top: 5px;
+  border-color: #D9D9D9;
+  width: 2.5%;
+  cursor: pointer;
+}
+
+
 .hidden-file-input {
   display: none;
+  cursor: pointer;
 }
 
 .custom-file-button {
   display: inline-block;
   padding: 8px 16px;
-  background-color: #007bff; /* Change this to any color you like */
+  background-color: #007bff; 
   color: white;
   border-radius: 4px;
   cursor: pointer;

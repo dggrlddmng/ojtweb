@@ -62,9 +62,9 @@ async def get_file(request: Request, filename: str):
     if not os.path.exists(file_path):
         return JSONResponse(status_code=404, content={"detail": "File not found"})
 
-    file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
-    if datetime.now() > file_mtime + timedelta(seconds=5):
-        return JSONResponse(status_code=403, content={"detail": "File has expired"})
+    #file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
+    #if datetime.now() > file_mtime + timedelta(seconds=5):
+        #return JSONResponse(status_code=403, content={"detail": "File has expired"})
 
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 
@@ -85,3 +85,21 @@ async def delete_all_files(request: Request):
         return {"detail": "All files deleted successfully"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"detail": f"Failed to delete files: {str(e)}"})
+
+@app.delete("/files/{filename}")
+@limiter.limit("5/minute")
+async def delete_single_file(request: Request, filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    if not os.path.isfile(file_path):
+        return JSONResponse(status_code=404, content={"detail": "File not found"})
+
+    try:
+        os.remove(file_path)
+        if filename in file_metadata:
+            del file_metadata[filename]
+            save_metadata()
+
+        return {"detail": f"File '{filename}' deleted successfully"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Error deleting file: {str(e)}"})

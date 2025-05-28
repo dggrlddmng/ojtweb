@@ -79,9 +79,14 @@ export default function FileUploaderDownloader({ files }) {
       <h2>Upload a File</h2>
       <input className="inputFile" type="file" onChange={handleFileChange} />
       <br />
-      <button className="btn-upload" onClick={handleUpload} disabled={!selectedFile || uploading}>
+      <button className="btn-upload" onClick={handleUpload} disabled={!selectedFile || uploading} >
         {uploading ? "Uploading..." : "Upload"}
       </button>
+      <div className="refresh-container">
+        <button className="btn-refresh" onClick={() => window.location.reload()} >
+          <img src="/RefreshIcon.png" alt="Refresh Icon" style={{ width: 20, height: 20, marginRight: 6 }} />
+        </button>
+      </div>
       <div className="card">
         <div className="card-contents">
           <h1>Uploaded files</h1>
